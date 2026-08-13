@@ -10,6 +10,97 @@ from monitor import calculate_hash, scan_directory, compare_states
 
 class TestFileIntegrityMonitor(unittest.TestCase):
 
+    def test_wrong_directory_exit_code(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            monitored_dir = os.path.join(temp_dir, "monitored")
+            wrong_dir = os.path.join(temp_dir, "wrong")
+            os.mkdir(monitored_dir)
+            os.mkdir(wrong_dir)
+
+            test_file = os.path.join(monitored_dir, "test.txt")
+            baseline_file = os.path.join(temp_dir, "baseline.json")
+
+            with open(test_file, "w") as file:
+                file.write("original content")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "monitor.py",
+                    "--baseline",
+                    "--directory",
+                    monitored_dir,
+                    "--baseline-file",
+                    baseline_file
+                ],
+                capture_output=True,
+                text=True
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "monitor.py",
+                    "--check",
+                    "--directory",
+                    wrong_dir,
+                    "--baseline-file",
+                    baseline_file
+                ],
+                capture_output=True,
+                text=True
+            )
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(
+                "does not match the baseline",
+                result.stdout
+            )
+
+
+    def test_missing_baseline_exit_code(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_baseline = os.path.join(temp_dir, "missing.json")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "monitor.py",
+                    "--check",
+                    "--directory",
+                    temp_dir,
+                    "--baseline-file",
+                    missing_baseline
+                ],
+                capture_output=True,
+                text=True
+            )
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(
+                "No baseline found",
+                result.stdout
+            )
+
+
+    def test_multiple_changes(self):
+        baseline = {
+            "config.txt": "old_hash",
+            "notes.txt": "notes_hash"
+        }
+
+        current_state = {
+            "config.txt": "new_hash",
+            "new.txt": "new_file_hash"
+        }
+
+        changes = compare_states(baseline, current_state)
+
+        self.assertIn(("MODIFIED", "config.txt"), changes)
+        self.assertIn(("NEW", "new.txt"), changes)
+        self.assertIn(("DELETED", "notes.txt"), changes)
+        self.assertEqual(len(changes), 3)
+
     def test_cli_clean_check_exit_code(self):
         with tempfile.TemporaryDirectory() as temp_dir:
            test_file = os.path.join(temp_dir, "test.txt")
