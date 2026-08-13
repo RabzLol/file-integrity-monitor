@@ -18,10 +18,13 @@ logging.basicConfig(
 )
 
 def calculate_hash(file_path):
-    with open(file_path, "rb") as file:
-        file_data = file.read()
+    sha256 = hashlib.sha256()
 
-    return hashlib.sha256(file_data).hexdigest()
+    with open(file_path, "rb") as file:
+        while chunk := file.read(65536):
+            sha256.update(chunk)
+
+    return sha256.hexdigest()
 
 
 def scan_directory(directory):
