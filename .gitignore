@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime files
+baseline.json
+integrity.log
+
+# Test/cache files
+.pytest_cache/
+.coverage
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
