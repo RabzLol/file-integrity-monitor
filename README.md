@@ -69,7 +69,7 @@ Files that existed in the baseline but no longer exist are reported as `DELETED`
 Clone the repository:
 
 ```bash
-git clone <YOUR-REPOSITORY-URL>
+git clone <git clone https://github.com/RabzLol/file-integrity-monitor.git>
 cd file-integrity-monitor
 ```
 
