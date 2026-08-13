@@ -34,6 +34,23 @@ def scan_directory(directory):
 
     return hashes
 
+def compare_states(baseline, current_state):
+    changes = []
+
+    for file_path, current_hash in current_state.items():
+        if file_path not in baseline:
+            changes.append(("NEW", file_path))
+
+        elif current_hash != baseline[file_path]:
+            changes.append(("MODIFIED", file_path))
+
+    for file_path in baseline:
+        if file_path not in current_state:
+            changes.append(("DELETED", file_path))
+
+    return changes
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="SHA-256 File Integrity Monitor"
@@ -74,32 +91,18 @@ if __name__ == "__main__":
         with open(BASELINE_FILE, "r") as file:
             baseline = json.load(file)
     
-        changes_found = False
-    
-        for file_path, current_hash in current_state.items():
-            if file_path not in baseline:
-                message = f"[NEW] {file_path}"
+        changes = compare_states(baseline, current_state)
+
+        if changes:
+            for change_type, file_path in changes:
+                message = f"[{change_type}] {file_path}"
                 print(message)
                 logging.warning(message)
-                changes_found = True
-    
-            elif current_hash != baseline[file_path]:
-                message = f"[MODIFIED] {file_path}"
-                print(message)
-                logging.warning(message)
-                changes_found = True
-    
-        for file_path in baseline:
-            if file_path not in current_state:
-                message = f"[DELETED] {file_path}"
-                print(message)
-                logging.warning(message)
-                changes_found = True
-    
-        if not changes_found:
+
+        else:
             message = "[OK] No file changes detected"
             print(message)
             logging.info(message)
-    
+
     else:
         parser.print_help()

@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from monitor import calculate_hash, scan_directory
+from monitor import calculate_hash, scan_directory, compare_states
 
 
 class TestFileIntegrityMonitor(unittest.TestCase):
@@ -29,11 +29,54 @@ class TestFileIntegrityMonitor(unittest.TestCase):
 
             result = scan_directory(temp_dir)
 
-            self.assertIn(file_path, result)
-            self.assertEqual(
-                result[file_path],
-                hashlib.sha256(b"security test").hexdigest()
-            )
+        self.assertEqual(
+            result[file_path],
+            hashlib.sha256(b"security test").hexdigest()
+        )
+
+    def test_detect_new_file(self):
+        baseline = {
+            "config.txt": "abc123"
+        }
+
+        current_state = {
+            "config.txt": "abc123",
+            "new.txt": "def456"
+        }
+
+        changes = compare_states(baseline, current_state)
+
+        self.assertIn(("NEW", "new.txt"), changes)
+
+
+    def test_detect_modified_file(self):
+        baseline = {
+            "config.txt": "old_hash"
+        }
+
+        current_state = {
+            "config.txt": "new_hash"
+        }
+
+        changes = compare_states(baseline, current_state)
+
+        self.assertIn(("MODIFIED", "config.txt"), changes)
+
+
+    def test_detect_deleted_file(self):
+        baseline = {
+            "config.txt": "abc123",
+            "notes.txt": "def456"
+        }
+
+        current_state = {
+            "config.txt": "abc123"
+        }
+
+        changes = compare_states(baseline, current_state)
+
+        self.assertIn(("DELETED", "notes.txt"), changes)
+            
 
 
 if __name__ == "__main__":
