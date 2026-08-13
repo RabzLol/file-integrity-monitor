@@ -17,3 +17,10 @@ integrity.log
 
 # OS files
 .DS_Store
+# Docker test/runtime data
+docker-test/
+docker-baseline/
+
+# Local monitored data
+monitored_files/*
+!monitored_files/.gitkeep

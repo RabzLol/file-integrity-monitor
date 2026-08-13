@@ -1,0 +1,9 @@
+.git
+__pycache__
+*.pyc
+baseline.json
+integrity.log
+docker-test
+docker-baseline
+tests
+README.md

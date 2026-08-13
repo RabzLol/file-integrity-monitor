@@ -203,6 +203,76 @@ before the file existed.
 
 This helped reinforce that filesystem operations need to account for missing paths and that test environments must be prepared before files are accessed.
 
+## Docker
+
+The File Integrity Monitor can also run inside Docker.
+
+### Build the image
+
+```bash
+docker build -t file-integrity-monitor .
+```
+
+### View CLI help
+
+```bash
+docker run --rm file-integrity-monitor --help
+```
+
+### Container Security
+
+The Docker image uses a dedicated non-root user:
+
+```text
+fimuser
+UID: 10001
+```
+
+The monitored directory can be mounted read-only so the monitoring process does not need permission to modify the files it watches.
+
+### Create a baseline with Docker
+
+```bash
+docker run --rm \
+  -v "$PWD/docker-test:/data:ro" \
+  -v "$PWD/docker-baseline:/baseline" \
+  file-integrity-monitor \
+  --baseline \
+  --directory /data \
+  --baseline-file /baseline/baseline.json \
+  --log-file /baseline/integrity.log
+```
+
+### Check integrity
+
+```bash
+docker run --rm \
+  -v "$PWD/docker-test:/data:ro" \
+  -v "$PWD/docker-baseline:/baseline" \
+  file-integrity-monitor \
+  --check \
+  --directory /data \
+  --baseline-file /baseline/baseline.json \
+  --log-file /baseline/integrity.log
+```
+
+If a monitored file changes, the container reports the event:
+
+```text
+[MODIFIED] /data/test.txt
+```
+
+The integrity log remains available on the host even after the container is removed.
+
+### Docker Security Design
+
+The container follows several basic security practices:
+
+- Runs as an unprivileged user instead of root
+- Uses a read-only mount for monitored data
+- Stores baseline data outside the container
+- Stores security logs outside the container
+- Uses `.dockerignore` to reduce the build context
 ### NameError
 
 A stray character was accidentally left inside `monitor.py`, resulting in:

@@ -10,12 +10,7 @@ BASELINE_FILE = "baseline.json"
 LOG_FILE = "integrity.log"
 
 
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+LOG_FILE = "integrity.log"
 
 def calculate_hash(file_path):
     sha256 = hashlib.sha256()
@@ -95,10 +90,20 @@ if __name__ == "__main__":
         default=BASELINE_FILE,
         help="Path to the baseline file (default: baseline.json)"
     )
+    parser.add_argument(
+        "--log-file",
+        default=LOG_FILE,
+        help="Path to the log file (default: integrity.log)"
+    )
     
     args = parser.parse_args()
     
-    
+    logging.basicConfig(
+        filename=args.log_file,
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
     
     
     if args.baseline:
