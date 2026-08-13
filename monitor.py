@@ -80,28 +80,51 @@ if __name__ == "__main__":
         action="store_true",
         help="Check monitored files against the baseline"
     )
+
+    parser.add_argument(
+        "--directory",
+        default=MONITORED_DIR,
+        help="Directory to monitor (default: monitored_files)"
+    )
     
     args = parser.parse_args()
     
     
-    current_state = scan_directory(MONITORED_DIR)
+    
     
     if args.baseline:
+        current_state = scan_directory(args.directory)
+        baseline_data = {
+            "directory": os.path.abspath(args.directory),
+            "files": current_state
+        }
+
         with open(BASELINE_FILE, "w") as file:
-            json.dump(current_state, file, indent=4)
-    
+            json.dump(baseline_data, file, indent=4)
+
         message = "[BASELINE CREATED]"
         print(message)
         logging.info(message)
-    
+
     elif args.check:
         if not os.path.exists(BASELINE_FILE):
             print("[ERROR] No baseline found. Run with --baseline first.")
             raise SystemExit(1)
-    
+
         with open(BASELINE_FILE, "r") as file:
-            baseline = json.load(file)
-    
+            baseline_data = json.load(file)
+
+        baseline_directory = baseline_data["directory"]
+        baseline = baseline_data["files"]
+
+        current_directory = os.path.abspath(args.directory)
+
+        if current_directory != baseline_directory:
+            print("[ERROR] The selected directory does not match the baseline.")
+            raise SystemExit(1)
+
+        current_state = scan_directory(args.directory)
+
         changes = compare_states(baseline, current_state)
 
         if changes:
