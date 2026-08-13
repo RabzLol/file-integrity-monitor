@@ -33,12 +33,20 @@ def scan_directory(directory):
     for root, _, files in os.walk(directory):
         for filename in files:
             file_path = os.path.join(root, filename)
-            hashes[file_path] = calculate_hash(file_path)
+
+            try:
+                hashes[file_path] = calculate_hash(file_path)
+
+            except (PermissionError, FileNotFoundError, OSError) as error:
+                message = f"[ERROR] Could not hash {file_path}: {error}"
+                print(message)
+                logging.error(message)
 
     return hashes
 
 def compare_states(baseline, current_state):
     changes = []
+
 
     for file_path, current_hash in current_state.items():
         if file_path not in baseline:
