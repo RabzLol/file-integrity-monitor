@@ -2,11 +2,89 @@ import hashlib
 import os
 import tempfile
 import unittest
+import subprocess
+import sys
 
 from monitor import calculate_hash, scan_directory, compare_states
 
 
 class TestFileIntegrityMonitor(unittest.TestCase):
+
+    def test_cli_clean_check_exit_code(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+           test_file = os.path.join(temp_dir, "test.txt")
+           baseline_file = os.path.join(temp_dir, "baseline.json")
+
+           with open(test_file, "w") as file:
+               file.write("original content")
+
+           baseline_result = subprocess.run(
+               [
+                   sys.executable,
+                   "monitor.py",
+                   "--baseline",
+                   "--directory",
+                   temp_dir
+               ],
+               capture_output=True,
+               text=True
+           )
+
+           self.assertEqual(baseline_result.returncode, 0)
+
+           check_result = subprocess.run(
+               [
+                   sys.executable,
+                   "monitor.py",
+                   "--check",
+                   "--directory",
+                   temp_dir
+               ],
+               capture_output=True,
+               text=True
+           )
+
+           self.assertEqual(check_result.returncode, 0)
+
+
+    def test_cli_detected_change_exit_code(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "test.txt")
+            baseline_file = os.path.join(temp_dir, "baseline.json")
+          
+            with open(test_file, "w") as file:
+                file.write("original content")
+
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "monitor.py",
+                    "--baseline",
+                    "--directory",
+                    temp_dir
+                ],
+                capture_output=True,
+                text=True
+            )
+
+            with open(test_file, "w") as file:
+                file.write("modified content")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "monitor.py",
+                    "--check",
+                    "--directory",
+                    temp_dir
+                ],
+                capture_output=True,
+                text=True
+            )
+
+            self.assertEqual(result.returncode, 2)        
+
 
     def test_scan_directory_handles_hash_error(self):
         with tempfile.TemporaryDirectory() as temp_dir:

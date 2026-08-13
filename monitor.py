@@ -33,6 +33,9 @@ def scan_directory(directory):
     for root, _, files in os.walk(directory):
         for filename in files:
             file_path = os.path.join(root, filename)
+            
+            if not os.path.isfile(file_path):
+                continue
 
             try:
                 hashes[file_path] = calculate_hash(file_path)
@@ -86,6 +89,12 @@ if __name__ == "__main__":
         default=MONITORED_DIR,
         help="Directory to monitor (default: monitored_files)"
     )
+
+    parser.add_argument(
+        "--baseline-file",
+        default=BASELINE_FILE,
+        help="Path to the baseline file (default: baseline.json)"
+    )
     
     args = parser.parse_args()
     
@@ -99,7 +108,7 @@ if __name__ == "__main__":
             "files": current_state
         }
 
-        with open(BASELINE_FILE, "w") as file:
+        with open(args.baseline_file, "w") as file:
             json.dump(baseline_data, file, indent=4)
 
         message = "[BASELINE CREATED]"
@@ -107,11 +116,11 @@ if __name__ == "__main__":
         logging.info(message)
 
     elif args.check:
-        if not os.path.exists(BASELINE_FILE):
+        if not os.path.exists(args.baseline_file):
             print("[ERROR] No baseline found. Run with --baseline first.")
             raise SystemExit(1)
 
-        with open(BASELINE_FILE, "r") as file:
+        with open(args.baseline_file, "r") as file:
             baseline_data = json.load(file)
 
         baseline_directory = baseline_data["directory"]
@@ -133,10 +142,14 @@ if __name__ == "__main__":
                 print(message)
                 logging.warning(message)
 
+            raise SystemExit(2)
+
         else:
-            message = "[OK] No file changes detected"
-            print(message)
-            logging.info(message)
+             message = "[OK] No file changes detected"
+             print(message)
+             logging.info(message)
+
+             raise SystemExit(0)
 
     else:
         parser.print_help()
